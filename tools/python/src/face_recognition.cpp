@@ -5,6 +5,8 @@
 #include <boost/shared_ptr.hpp>
 #include <dlib/matrix.h>
 #include <boost/python/slice.hpp>
+#include <boost/python/numpy.hpp>
+
 #include <dlib/geometry/vector.h>
 #include <dlib/dnn.h>
 #include <dlib/image_transforms.h>
@@ -16,6 +18,8 @@
 using namespace dlib;
 using namespace std;
 using namespace boost::python;
+// namespace p = boost::python;
+namespace np = boost::python::numpy;
 
 typedef matrix<double,0,1> cv;
 
@@ -130,15 +134,32 @@ private:
     template <typename SUBNET> using alevel3 = ares<64,ares<64,ares<64,ares_down<64,SUBNET>>>>;
     template <typename SUBNET> using alevel4 = ares<32,ares<32,ares<32,SUBNET>>>;
 
-    using anet_type = loss_metric<fc_no_bias<128,avg_pool_everything<
-                                alevel0<
-                                alevel1<
-                                alevel2<
-                                alevel3<
-                                alevel4<
-                                max_pool<3,3,2,2,relu<affine<con<32,7,7,2,2,
+    using anet_type = loss_metric<
+          fc_no_bias<
+            128,
+            avg_pool_everything<
+              alevel0<
+                alevel1<
+                  alevel2<
+                    alevel3<
+                      alevel4<
+                        max_pool<
+                          3, 3, 2, 2,
+                          relu<
+                            affine<
+                              con<32,7,7,2,2,
                                 input_rgb_image_sized<150>
-                                >>>>>>>>>>>>;
+                              >
+                            >
+                          >
+                        >
+                      >
+                    >
+                  >
+                >
+              >
+              >
+              >>;
     anet_type net;
 };
 
@@ -203,6 +224,36 @@ void save_face_chips (
     }
 }
 
+np::ndarray extract_face_chip(object& img, const full_object_detection& detection,
+    const unsigned long size = 200,
+    const double padding = 0.2)
+{
+  chip_details chip = get_face_chip_details(detection, size, padding);
+
+  array2d<rgb_pixel> face_chip;
+  extract_image_chip(numpy_rgb_image(img), chip, face_chip);
+
+  tuple shape = make_tuple(size, size);
+  tuple stride = make_tuple(sizeof(unsigned char)*3, sizeof(unsigned char) * size);
+
+  object own;
+  np::dtype dt1 = np::dtype::get_builtin<unsigned char>();
+
+  np::ndarray py_array = np::from_data(
+      face_chip,
+      dt1,
+      shape,
+      stride,
+      own);
+
+  /*
+  PyObject* o = (PyObject*)p->u->userdata;
+  Py_INCREF(o);
+  */
+  return py_array;
+}
+
+
 void save_face_chip (
     object img,
     const full_object_detection& face,
@@ -231,6 +282,8 @@ void bind_face_recognition()
             "If num_jitters>1 then each face will be randomly jittered slightly num_jitters times, each run through the 128D projection, and the average used as the face descriptor."
             );
     }
+
+    def("extract_face_chip", &extract_face_chip, arg("img"), arg("detection"), arg("size"), arg("padding"));
 
     def("save_face_chip", &save_face_chip, (arg("img"),arg("face"),arg("chip_filename")),
         "Takes an image and a full_object_detection that references a face in that image and saves the face with the specified file name prefix.  The face will be rotated upright and scaled to 150x150 pixels."

@@ -46,6 +46,10 @@ void save_shape_predictor(const shape_predictor& predictor, const std::string& p
 rectangle full_obj_det_get_rect (const full_object_detection& detection)
 { return detection.get_rect(); }
 
+
+
+
+
 unsigned long full_obj_det_num_parts (const full_object_detection& detection)
 { return detection.num_parts(); }
 
