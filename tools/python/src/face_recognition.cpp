@@ -18,7 +18,7 @@
 using namespace dlib;
 using namespace std;
 using namespace boost::python;
-// namespace p = boost::python;
+namespace p = boost::python;
 namespace np = boost::python::numpy;
 
 typedef matrix<double,0,1> cv;
@@ -233,10 +233,10 @@ np::ndarray extract_face_chip(object& img, const full_object_detection& detectio
   array2d<rgb_pixel> face_chip;
   extract_image_chip(numpy_rgb_image(img), chip, face_chip);
 
-  tuple shape = make_tuple(size, size);
-  tuple stride = make_tuple(sizeof(unsigned char)*3, sizeof(unsigned char) * size);
+  p::tuple shape = p::make_tuple(size, size);
+  p::tuple stride = p::make_tuple(sizeof(unsigned char)*3, sizeof(unsigned char) * size);
 
-  object own;
+  p::object own;
   np::dtype dt1 = np::dtype::get_builtin<unsigned char>();
 
   np::ndarray py_array = np::from_data(
